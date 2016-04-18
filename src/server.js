@@ -3,7 +3,6 @@
 import 'source-map-support/register';
 import Debug from 'debug';
 import EioServer from 'engine.io';
-import EventEmitter from 'events';
 import http from 'http';
 const debug = new Debug('ws-telegraph:server');
 
@@ -40,7 +39,7 @@ class TgRequest {
 /**
  * Telegraph-server
  */
-export class Server extends EventEmitter {
+export class Server {
     /**
      * Create ws-server with provided settings
      * @param {string} host
@@ -74,7 +73,6 @@ export class Server extends EventEmitter {
     }
 
     constructor(httpServer, eioServer) {
-        super();
         eioServer.attach(httpServer);
 
         this.eioServer = eioServer;
@@ -86,7 +84,7 @@ export class Server extends EventEmitter {
     }
 
     /**
-     * Handle "message" event and rise events for all RPC
+     * Handle "message" event and call handler if it exist
      * @param socket - connection with client
      * @param {string|*} data - data in json format
      */
@@ -112,10 +110,12 @@ export class Server extends EventEmitter {
             return;
         }
 
-        const eventName = `${messageMethod}`;
-
         const request = new TgRequest(socket, messageMethod, messageId, messageArgs);
-        this.emit(eventName, request);
+        const handlerName = `on${messageMethod.charAt(0).toUpperCase()}${messageMethod.slice(1)}`;
+        const handler = this[handlerName];
+        if (typeof handler === 'function') {
+            handler(request);
+        }
     }
 
     /**

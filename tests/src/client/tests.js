@@ -13,15 +13,14 @@ export function runTests() {
              */
             const client = this.client;
             const server = this.server;
-            const helloListener = (request)=> {
-                request.response('world');
-            };
-            
+
             return (
                 (async() => {
-                    server.on('hello', helloListener);
+                    server.onHello = function onHello(request) {
+                        request.response('world');
+                    };
                     const result = await client.callWithResult('hello');
-                    server.removeListener('hello', helloListener);
+                    delete server.onHello;
                     should(result).equal('world');
                 })()
             );
@@ -41,13 +40,17 @@ export function runTests() {
             return (
                 (async() => {
                     let errOccurred = false;
-                    server.on('sleep', lazyListener);
+                    server.onSleep = function onSleep(request) {
+                        setTimeout(()=> {
+                            request.response('I am sleep for 100 ms');
+                        }, 100);
+                    };
                     try {
                         await client.callWithResult('sleep');
                     } catch (err) {
                         errOccurred = true;
                     }
-                    server.removeListener('sleep', lazyListener);
+                    delete server.onSleep;
                     should(errOccurred).equal(true, 'No exception  was thrown');
                 })()
             );
@@ -59,50 +62,46 @@ export function runTests() {
              */
             const client = this.client;
             const server = this.server;
-            const lazyListener = (request)=> {
-                setTimeout(()=> {
-                    request.response('I am sleep for 100 ms');
-                }, 100);
-            };
+
             return (
                 (async() => {
                     let errOccurred = false;
-                    server.on('sleep', lazyListener);
+                    server.onSleep = function onSleep(request) {
+                        setTimeout(()=> {
+                            request.response('I am sleep for 100 ms');
+                        }, 100);
+                    };
                     try {
                         await client.callWithResult('sleep', {timeout: 150});
                     } catch (err) {
                         errOccurred = true;
                     }
-                    server.removeListener('sleep', lazyListener);
+                    delete server.onSleep;
                     should(errOccurred).equal(false, 'Exception  was thrown even with increased timeout limit');
                 })()
             );
         });
 
         it('Can call RPC without result', function () {
-
             const client = this.client;
             const server = this.server;
 
             return (
                 (async() => {
-                    await client.call('silence');
-
-                    let silenceListener;
-                    const requestResult = await new Promise((resolve)=>{
-                        const timeoutTimer = setTimeout(()=>{
+                    const requestResult = await new Promise((resolve)=> {
+                        const timeoutTimer = setTimeout(()=> {
                             resolve(new Error('Timeout'));
                         }, 200);// wait up to 200 until the server receives the message
 
-                        silenceListener = () => {
+                        server.onSilence = function silence() {
                             clearTimeout(timeoutTimer);
                             resolve(true);
                         };
-                        server.on('silence', silenceListener);
-                     
+
+                        client.call('silence');
                     });
 
-                    server.removeListener('silence', silenceListener);
+                    delete server.onSilence;
                     should(requestResult).equal(true, 'Server does not receive request');
                 })()
             );

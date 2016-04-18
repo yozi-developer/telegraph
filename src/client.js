@@ -3,7 +3,6 @@
 import 'source-map-support/register';
 import Debug from 'debug';
 import EioClient from 'engine.io-client';
-import EventEmitter from 'events';
 const debug = new Debug('ws-telegraph:client');
 
 /**
@@ -26,7 +25,7 @@ class TgResponse {
 /**
  * Client for Telegraph-server
  */
-export class Client extends EventEmitter {
+export class Client  {
     /**
      * Create connection to WS-server and instantiate client with it
      * @param {string} host
@@ -54,7 +53,6 @@ export class Client extends EventEmitter {
     }
 
     constructor(eioClient) {
-        super();
         this.eioClient = eioClient;
         this.callId = 0;
 
@@ -119,10 +117,10 @@ export class Client extends EventEmitter {
                 }
             };
 
-            this.on('rpc_response', listener);
+            this.eioClient.on('rpc_response', listener);
         });
 
-        this.removeListener('rpc_response', listener);
+        this.eioClient.removeListener('rpc_response', listener);
         if (result instanceof Error) {
             throw result;
         } else {
@@ -184,7 +182,7 @@ export class Client extends EventEmitter {
 
         const response = new TgResponse(socket, requestMethod, requestId, responseResult);
         debug('emit rpc_response event');
-        this.emit(eventName, response);
+        this.eioClient.emit(eventName, response);
     }
 
     /**
