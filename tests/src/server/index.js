@@ -1,27 +1,27 @@
 'use strict';
 /*
- global describe: true, before: true, it: true, after: true
+ global after: true, afterEach: true, before: true,  beforeEach, it: true, describe: true, process: true
  */
-import {Client} from '../../../lib/client';
-import {Server} from '../../../lib/server';
+import {WsTgClient} from '../../../lib/client';
+import {WsTgServer} from '../../../lib/server';
 import {runTests}  from './tests';
 const port = process.env.PORT || 3000;
 
 export function runServerTests() {
     describe('No-Cache', function () {
-        before(function () {
+        beforeEach(function () {
 
             return (
                 (async() => {
-                    this.server = await  Server.create('localhost', port);
-                    this.client = await  Client.create('localhost', port);
+                    this.server = await  WsTgServer.create('localhost', port);
+                    this.client = await  WsTgClient.create('localhost', port);
                 })()
             );
         });
 
         runTests();
 
-        after(function () {
+        afterEach(function () {
 
             return (
                 (async() => {

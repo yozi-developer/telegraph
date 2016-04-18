@@ -8,7 +8,7 @@ const debug = new Debug('ws-telegraph:client');
 /**
  * Represent incoming RPC-response
  */
-class TgResponse {
+class WsTgClientResponse {
     /**
      * @param socket - client socket
      * @param {string} method - rpc-method name
@@ -23,14 +23,14 @@ class TgResponse {
     }
 }
 /**
- * Client for Telegraph-server
+ * WsTgClient for Telegraph-server
  */
-export class Client  {
+export class WsTgClient {
     /**
      * Create connection to WS-server and instantiate client with it
      * @param {string} host
      * @param {number} port
-     * @returns {Client}
+     * @returns {WsTgClient}
      */
     static async create(host, port) {
         debug('try create client');
@@ -51,9 +51,17 @@ export class Client  {
 
         return new this(eioClient);
     }
-
-    constructor(eioClient) {
+    
+    /**
+     *
+     * @param eioClient
+     * @param {Object} [options] - options for request
+     * @param {number} [options.timeout=100] - ms
+     */
+    constructor(eioClient, options = {}) {
         this.eioClient = eioClient;
+        this.options = options;
+        this.options.timeout = options.timeout || 100;
         this.callId = 0;
 
         this.eioClient.on('message', this.onMessage.bind(this, eioClient));
@@ -77,13 +85,11 @@ export class Client  {
     /**
      * Perform RPC and wait result
      * @param {string} method - method name
-     * @param {{timeout: number}} [options]
-     * @param {{}} [args]  arguments for remote procedure
+     * @param {...{}} [args]  arguments for remote procedure
      * @return {*}
      */
-    async callWithResult(method, options = {}, args) {
-        debug({event: 'Client callWithResult', method: method, options: options, args: args});
-        options.timeout = options.timeout || 50; // 50 ms
+    async callWithResult(method, ...args) {
+        debug({event: 'WsTgClient callWithResult', method: method, args: args});
         const requestId = this.generateId();
 
         const request = JSON.stringify({
@@ -102,16 +108,16 @@ export class Client  {
         const result = await new Promise((resolve)=> {
             const timeoutException = setTimeout(()=> {
                 debug('CallWithResult response timeout');
-                resolve(new Error('TgResponse timeout'));
-            }, options.timeout);
+                resolve(new Error('WsTgClientResponse timeout'));
+            }, this.options.timeout);
 
             /**
-             * @param {TgResponse} response
+             * @param {WsTgClientResponse} response
              * @returns {*}
              */
             listener = (response)=> {
                 if (response.requestId === requestId) {
-                    debug('TgResponse received');
+                    debug('WsTgClientResponse received');
                     clearTimeout(timeoutException);
                     return resolve(response.result);
                 }
@@ -131,10 +137,10 @@ export class Client  {
     /**
      * Perform RPC without getting result
      * @param {string} method - method name
-     * @param {{}} [args]  arguments for remote procedure
+     * @param {...{}} [args]  arguments for remote procedure
      */
-    async call(method, args){
-        debug({event: 'Client call', method: method, args: args});
+    async call(method, ...args) {
+        debug({event: 'WsTgClient call', method: method, args: args});
         const requestId = this.generateId();
 
         const request = JSON.stringify({
@@ -172,7 +178,7 @@ export class Client  {
         }
         if (errorOccurred) {
             debug({
-                event: 'Wrong response received. TgResponse must be in json format and have id and result fields',
+                event: 'Wrong response received. WsTgClientResponse must be in json format and have id and result fields',
                 data: data
             });
             return;
@@ -180,14 +186,14 @@ export class Client  {
 
         const eventName = 'rpc_response';
 
-        const response = new TgResponse(socket, requestMethod, requestId, responseResult);
+        const response = new WsTgClientResponse(socket, requestMethod, requestId, responseResult);
         debug('emit rpc_response event');
         this.eioClient.emit(eventName, response);
     }
 
     /**
      * Close connection with server
-     * @note: async for consistency with the server.close
+     * @note: async for consistency with the WsTgServer.close
      */
     async close() {
         debug('Perform close connection');

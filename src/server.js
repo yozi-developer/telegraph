@@ -9,7 +9,7 @@ const debug = new Debug('ws-telegraph:server');
 /**
  * Represent incoming RPC-request
  */
-class TgRequest {
+class WsTgServerRequest {
     /**
      * @param socket - client socket
      * @param {string} method - rpc-method name
@@ -39,12 +39,12 @@ class TgRequest {
 /**
  * Telegraph-server
  */
-export class Server {
+export class WsTgServer {
     /**
      * Create ws-server with provided settings
      * @param {string} host
      * @param {number} port
-     * @param {Object} options see Server Options at https://github.com/socketio/engine.io#methods-1
+     * @param {Object} options see WsTgServer Options at https://github.com/socketio/engine.io#methods-1
      */
     static async create(host, port, options = {}) {
         debug('try create server');
@@ -110,7 +110,7 @@ export class Server {
             return;
         }
 
-        const request = new TgRequest(socket, messageMethod, messageId, messageArgs);
+        const request = new WsTgServerRequest(socket, messageMethod, messageId, messageArgs);
         const handlerName = `on${messageMethod.charAt(0).toUpperCase()}${messageMethod.slice(1)}`;
         const handler = this[handlerName];
         if (typeof handler === 'function') {
@@ -126,7 +126,7 @@ export class Server {
         this.eioServer.close();
         await new Promise((resolve, reject)=> {
             this.httpServer.close(()=> {
-                debug('Server stopped, all connections closed');
+                debug('WsTgServer stopped, all connections closed');
                 resolve();
             });
         });

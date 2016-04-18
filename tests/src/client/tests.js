@@ -1,6 +1,7 @@
 'use strict';
 /*
- global before: true, describe: true, it: true, context: true
+ global after: true, afterEach: true, before: true,  beforeEach, it: true, describe: true, process: true, 
+
  */
 
 import should from 'should';
@@ -9,18 +10,17 @@ export function runTests() {
     describe('RPC', function () {
         it('Can call RPC', function () {
             /**
-             * @type Client
+             * @type WsTgClient
              */
             const client = this.client;
             const server = this.server;
 
             return (
                 (async() => {
-                    server.onHello = function onHello(request) {
+                    server.onHello = async function onHello(request) {
                         request.response('world');
                     };
                     const result = await client.callWithResult('hello');
-                    delete server.onHello;
                     should(result).equal('world');
                 })()
             );
@@ -28,7 +28,7 @@ export function runTests() {
 
         it('Throw error on timeout', function () {
             /**
-             * @type Client
+             * @type WsTgClient
              */
             const client = this.client;
             const server = this.server;
@@ -40,7 +40,7 @@ export function runTests() {
             return (
                 (async() => {
                     let errOccurred = false;
-                    server.onSleep = function onSleep(request) {
+                    server.onSleep = async function onSleep(request) {
                         setTimeout(()=> {
                             request.response('I am sleep for 100 ms');
                         }, 100);
@@ -50,7 +50,6 @@ export function runTests() {
                     } catch (err) {
                         errOccurred = true;
                     }
-                    delete server.onSleep;
                     should(errOccurred).equal(true, 'No exception  was thrown');
                 })()
             );
@@ -58,7 +57,7 @@ export function runTests() {
 
         it('Can increase timeout limit', function () {
             /**
-             * @type Client
+             * @type WsTgClient
              */
             const client = this.client;
             const server = this.server;
@@ -66,17 +65,19 @@ export function runTests() {
             return (
                 (async() => {
                     let errOccurred = false;
-                    server.onSleep = function onSleep(request) {
+
+                    server.onSleep = async function onSleep(request) {
                         setTimeout(()=> {
                             request.response('I am sleep for 100 ms');
                         }, 100);
                     };
+                    client.options.timeout = 150;
+
                     try {
-                        await client.callWithResult('sleep', {timeout: 150});
+                        await client.callWithResult('sleep');
                     } catch (err) {
                         errOccurred = true;
                     }
-                    delete server.onSleep;
                     should(errOccurred).equal(false, 'Exception  was thrown even with increased timeout limit');
                 })()
             );
@@ -93,7 +94,7 @@ export function runTests() {
                             resolve(new Error('Timeout'));
                         }, 200);// wait up to 200 until the server receives the message
 
-                        server.onSilence = function silence() {
+                        server.onSilence = async function silence() {
                             clearTimeout(timeoutTimer);
                             resolve(true);
                         };
@@ -101,8 +102,7 @@ export function runTests() {
                         client.call('silence');
                     });
 
-                    delete server.onSilence;
-                    should(requestResult).equal(true, 'Server does not receive request');
+                    should(requestResult).equal(true, 'WsTgServer does not receive request');
                 })()
             );
         });

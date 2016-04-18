@@ -6,7 +6,7 @@ import 'source-map-support/register';
 import {runClientTests} from  './client';
 import {runServerTests} from  './server';
 
-describe('Client', function () {
+describe('WsTgClient', function () {
     before(function () {
         const self = this;
     });
@@ -14,7 +14,7 @@ describe('Client', function () {
     runClientTests();
 });
 
-describe('Server', function () {
+describe('WsTgServer', function () {
     before(function () {
         const self = this;
     });

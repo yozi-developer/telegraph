@@ -1,11 +1,11 @@
 'use strict';
 /*
- global before: true, describe: true, it: true
+ global after: true, afterEach: true, before: true,  beforeEach, it: true, describe: true, process: true
  */
 import should from 'should';
 
 export function runTests() {
-    describe('Server', function () {
+    describe('WsTgServer', function () {
        
     });
 }

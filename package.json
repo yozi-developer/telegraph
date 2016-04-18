@@ -1,6 +1,6 @@
 {
   "name": "ws-telegraph",
-  "version": "2.0.1-beta.0",
+  "version": "2.0.1-beta.1",
   "description": "library for RPC through websockets based on engine.io",
   "main": "lib/index.js",
   "scripts": {
