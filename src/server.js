@@ -42,22 +42,27 @@ class WsTgServerRequest {
 export class WsTgServer {
     /**
      * Create ws-server with provided settings
+
+     * @param {Object} options see Server Options at https://github.com/socketio/engine.io#methods-1
+     */
+    constructor(options = {}) {
+        debug('try create server');
+        this.options = Object.assign({}, options);
+        options.transports = this.options.transports || ['websocket'];
+    }
+
+    /**
+     * Start server on port
      * @param {string} host
      * @param {number} port
-     * @param {Object} options see WsTgServer Options at https://github.com/socketio/engine.io#methods-1
      */
-    static async create(host, port, options = {}) {
-        debug('try create server');
-        options.transports = options.transports || ['websocket'];
+    async start(host, port) {
         const httpServer = http.createServer(function (req, res) {
             res.writeHead(501);
             res.end('Not Implemented');
         });
-
-        const eioServer = new EioServer.Server(options);
-
+        const eioServer = new EioServer.Server(this.options);
         await new Promise((resolve, reject)=> {
-
             httpServer.listen({host, port}, function () {
                 debug(`Server started successfully at ${host}:${port}`);
                 return resolve();
@@ -67,20 +72,13 @@ export class WsTgServer {
                 return reject(err);
             });
         });
-
-
-        return new this(httpServer, eioServer);
-    }
-
-    constructor(httpServer, eioServer) {
         eioServer.attach(httpServer);
-
-        this.eioServer = eioServer;
-        this.httpServer = httpServer;
-
-        this.eioServer.on('connection', (socket)=> {
+        eioServer.on('connection', (socket)=> {
             socket.on('message', this.onMessage.bind(this, socket));
         });
+
+        this.httpServer = httpServer;
+        this.eioServer = eioServer;
     }
 
     /**
@@ -121,12 +119,14 @@ export class WsTgServer {
     /**
      * Close all connections and frees port
      */
-    async close() {
+    async stop() {
         debug('Perform server stop');
         this.eioServer.close();
+        delete this.eioServer;
         await new Promise((resolve, reject)=> {
             this.httpServer.close(()=> {
                 debug('WsTgServer stopped, all connections closed');
+                delete this.httpServer;
                 resolve();
             });
         });

@@ -28,43 +28,42 @@ class WsTgClientResponse {
 export class WsTgClient {
     /**
      * Create connection to WS-server and instantiate client with it
-     * @param {string} host
-     * @param {number} port
+     * @param {Object} [options] - options for request
+     * @param {number} [options.timeout=100] - ms
      * @returns {WsTgClient}
      */
-    static async create(host, port) {
+    constructor(options = {}) {
         debug('try create client');
+        this.options = Object.assign({}, options);
+        this.options.timeout = options.timeout || 100;
+    }
+
+    /**
+     * @param {string} host
+     * @param {number} port
+
+     */
+    async start(host, port) {
         const url = `ws://${host}:${port}`;
         const eioClient = new EioClient(url, {transports: ['websocket']});
+        this.eioClient = eioClient;
+        this.callId = 0;
 
         await new Promise((resolve, reject) => {
             eioClient.on('open', () => {
                 debug(`Connection successfully opened with url ${url}`);
+                this.onOpen();
                 return resolve();
             });
             eioClient.on('error', (err) => {
                 debug('Can\'t open connection due error');
+                this.onError();
                 return reject(err);
             });
 
         });
 
-        return new this(eioClient);
-    }
-    
-    /**
-     *
-     * @param eioClient
-     * @param {Object} [options] - options for request
-     * @param {number} [options.timeout=100] - ms
-     */
-    constructor(eioClient, options = {}) {
-        this.eioClient = eioClient;
-        this.options = options;
-        this.options.timeout = options.timeout || 100;
-        this.callId = 0;
-
-        this.eioClient.on('message', this.onMessage.bind(this, eioClient));
+        eioClient.on('message', ::this.onMessage);
     }
 
 
@@ -123,10 +122,10 @@ export class WsTgClient {
                 }
             };
 
-            this.eioClient.on('rpc_response', listener);
+            this.eioClient.on('rpcResponse', listener);
         });
 
-        this.eioClient.removeListener('rpc_response', listener);
+        this.eioClient.removeListener('rpcResponse', listener);
         if (result instanceof Error) {
             throw result;
         } else {
@@ -157,11 +156,22 @@ export class WsTgClient {
     }
 
     /**
-     * Handle response "message"
-     * @param socket - connection with server
-     * @param {string|*} data - data in json format
+     * Called when opening a connection. There may be some kind of a server preparing.
      */
-    onMessage(socket, data) {
+    onOpen() {
+        debug('Called onOpen');
+    }
+
+    onError() {
+        debug('Called onError');
+    }
+
+    /**
+     * Handle response "message"
+     * @param {string|*} data - data in json format
+     * @fires EioClient#rpcResponse
+     */
+    onMessage(data) {
         debug({event: 'receive message', data: data});
         let errorOccurred = false;
         let requestId, requestMethod, responseResult;
@@ -184,21 +194,26 @@ export class WsTgClient {
             return;
         }
 
-        const eventName = 'rpc_response';
-
-        const response = new WsTgClientResponse(socket, requestMethod, requestId, responseResult);
-        debug('emit rpc_response event');
-        this.eioClient.emit(eventName, response);
+        const response = new WsTgClientResponse(this.eioClient, requestMethod, requestId, responseResult);
+        debug('emit rpcResponse event');
+        /**
+         * RPC response event.
+         *
+         * @event EioClient#rpcResponse
+         * @type {WsTgClientResponse}
+         */
+        this.eioClient.emit('rpcResponse', response);
     }
 
     /**
      * Close connection with server
      * @note: async for consistency with the WsTgServer.close
      */
-    async close() {
+    async stop() {
         debug('Perform close connection');
 
         this.eioClient.close();
+        delete this.eioClient;
     }
 }
 

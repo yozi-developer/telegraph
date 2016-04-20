@@ -1,13 +1,59 @@
 'use strict';
 /*
  global after: true, afterEach: true, before: true,  beforeEach, it: true, describe: true, process: true, 
-
  */
 
+import {WsTgClient} from '../../../lib/client';
+import {WsTgServer} from '../../../lib/server';
 import should from 'should';
+const port = process.env.PORT || 3000;
 
 export function runTests() {
+
+    describe('Initialization', function () {
+        it('Client onOpen called', function () {
+            return (
+                (async() => {
+                    const server = new WsTgServer();
+                    await server.start('localhost', port);
+                    let onOpenCalled = false;
+                    const ExtendedClient = class ExtendedClient extends WsTgClient{
+                        onOpen(){
+                            super.onOpen();
+                            onOpenCalled = true;
+                        }
+                    };
+                    const client = new ExtendedClient();
+
+                    await  client.start('localhost', port);
+                    await  client.stop();
+                    await  server.stop();
+
+                    should(onOpenCalled).be.true();
+                })()
+            );
+        });
+    });
     describe('RPC', function () {
+        beforeEach(function () {
+            return (
+                (async() => {
+                    this.server = new WsTgServer();
+                    await this.server.start('localhost', port);
+                    this.client = new WsTgClient();
+                    await  this.client.start('localhost', port);
+                })()
+            );
+
+        });
+        afterEach(function () {
+            return (
+                (async() => {
+                    await this.client.stop();
+                    await this.server.stop();
+                })()
+            );
+        });
         it('Can call RPC', function () {
             /**
              * @type WsTgClient
@@ -32,11 +78,7 @@ export function runTests() {
              */
             const client = this.client;
             const server = this.server;
-            const lazyListener = (request)=> {
-                setTimeout(()=> {
-                    request.response('I am sleep for 100 ms');
-                }, 100);
-            };
+
             return (
                 (async() => {
                     let errOccurred = false;
