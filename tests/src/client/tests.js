@@ -35,7 +35,7 @@ export function runTests() {
         });
     });
     describe('RPC', function () {
-        beforeEach(function () {
+        before(function () {
             return (
                 (async() => {
                     this.server = new WsTgServer();
@@ -46,7 +46,7 @@ export function runTests() {
             );
 
         });
-        afterEach(function () {
+        after(function () {
             return (
                 (async() => {
                     await this.client.stop();
@@ -55,34 +55,36 @@ export function runTests() {
             );
         });
         it('Can call RPC', function () {
-            /**
-             * @type WsTgClient
-             */
-            const client = this.client;
-            const server = this.server;
-
             return (
                 (async() => {
-                    server.onHello = async function onHello() {
+                    this.server.onHello = async function onHello() {
                         return 'world';
                     };
-                    const result = await client.callAndWait('hello');
+                    const result = await this.client.callAndWait('hello');
+                    delete this.server.onHello;
                     should(result).equal('world');
                 })()
             );
         });
 
-        it('Throw error on timeout', function () {
-            /**
-             * @type WsTgClient
-             */
-            const client = this.client;
-            const server = this.server;
+        it('Can call RPC with void result', function () {
+            return (
+                (async() => {
+                    this.server.onVoid = async function onVoid() {
+                    };
+                    const result = await this.client.callAndWait('void');
+                    delete this.server.onVoid;
+                    should(result).be.undefined();
+                })()
+            );
+        });
 
+
+        it('Throw error on timeout', function () {
             return (
                 (async() => {
                     let errOccurred = false;
-                    server.onSleep = async function onSleep() {
+                    this.server.onSleep = async function onSleep() {
                         return await new Promise((resolve)=>{
                             setTimeout(()=> {
                                 resolve('I am sleep for 100 ms');
@@ -90,49 +92,42 @@ export function runTests() {
                         });
                     };
                     try {
-                        await client.callAndWait('sleep');
+                        await this.client.callAndWait('sleep');
                     } catch (err) {
                         errOccurred = true;
                     }
+                    delete this.server.onSleep;
                     should(errOccurred).equal(true, 'No exception  was thrown');
                 })()
             );
         });
 
         it('Can increase timeout limit', function () {
-            /**
-             * @type WsTgClient
-             */
-            const client = this.client;
-            const server = this.server;
-
             return (
                 (async() => {
                     let errOccurred = false;
 
-                    server.onSleep = async function onSleep() {
+                    this.server.onSleep = async function onSleep() {
                         return await new Promise((resolve)=>{
                             setTimeout(()=> {
                                 resolve('I am sleep for 100 ms');
                             }, 100);
                         });
                     };
-                    client.options.timeout = 150;
+                    this.client.options.timeout = 150;
 
                     try {
-                        await client.callAndWait('sleep');
+                        await this.client.callAndWait('sleep');
                     } catch (err) {
                         errOccurred = true;
                     }
+                    delete this.server.onSleep;
                     should(errOccurred).equal(false, 'Exception  was thrown even with increased timeout limit');
                 })()
             );
         });
 
         it('Can call RPC without result', function () {
-            const client = this.client;
-            const server = this.server;
-
             return (
                 (async() => {
                     const requestResult = await new Promise((resolve)=> {
@@ -140,14 +135,15 @@ export function runTests() {
                             resolve(new Error('Timeout'));
                         }, 200);// wait up to 200 until the server receives the message
 
-                        server.onSilence = async function silence() {
+                        this.server.onSilence = async function silence() {
                             clearTimeout(timeoutTimer);
                             resolve(true);
                         };
 
-                        client.call('silence');
+                        this.client.call('silence');
                     });
 
+                    delete this.server.onSilence;
                     should(requestResult).equal(true, 'WsTgServer does not receive request');
                 })()
             );

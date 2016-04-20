@@ -164,7 +164,7 @@ export class WsTgClient {
             const parsedData = JSON.parse(data);
             requestId = parsedData.id;
             responseResult = parsedData.result;
-            if (!requestId || !responseResult) {
+            if (typeof requestId === 'undefined') {
                 errorOccurred = true;
             }
         } catch (err) {
@@ -172,7 +172,7 @@ export class WsTgClient {
         }
         if (errorOccurred) {
             debug({
-                event: 'Wrong response received. Response must be in json format and have id and result fields',
+                event: 'Wrong response received. Response must be in json format and have id field',
                 data: data
             });
             return;
