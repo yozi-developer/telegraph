@@ -63,10 +63,10 @@ export function runTests() {
 
             return (
                 (async() => {
-                    server.onHello = async function onHello(request) {
-                        request.response('world');
+                    server.onHello = async function onHello() {
+                        return 'world';
                     };
-                    const result = await client.callWithResult('hello');
+                    const result = await client.callAndWait('hello');
                     should(result).equal('world');
                 })()
             );
@@ -82,13 +82,15 @@ export function runTests() {
             return (
                 (async() => {
                     let errOccurred = false;
-                    server.onSleep = async function onSleep(request) {
-                        setTimeout(()=> {
-                            request.response('I am sleep for 100 ms');
-                        }, 100);
+                    server.onSleep = async function onSleep() {
+                        return await new Promise((resolve)=>{
+                            setTimeout(()=> {
+                                resolve('I am sleep for 100 ms');
+                            }, 100);
+                        });
                     };
                     try {
-                        await client.callWithResult('sleep');
+                        await client.callAndWait('sleep');
                     } catch (err) {
                         errOccurred = true;
                     }
@@ -108,15 +110,17 @@ export function runTests() {
                 (async() => {
                     let errOccurred = false;
 
-                    server.onSleep = async function onSleep(request) {
-                        setTimeout(()=> {
-                            request.response('I am sleep for 100 ms');
-                        }, 100);
+                    server.onSleep = async function onSleep() {
+                        return await new Promise((resolve)=>{
+                            setTimeout(()=> {
+                                resolve('I am sleep for 100 ms');
+                            }, 100);
+                        });
                     };
                     client.options.timeout = 150;
 
                     try {
-                        await client.callWithResult('sleep');
+                        await client.callAndWait('sleep');
                     } catch (err) {
                         errOccurred = true;
                     }

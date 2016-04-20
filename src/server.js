@@ -7,36 +7,6 @@ import http from 'http';
 const debug = new Debug('ws-telegraph:server');
 
 /**
- * Represent incoming RPC-request
- */
-class WsTgServerRequest {
-    /**
-     * @param socket - client socket
-     * @param {string} method - rpc-method name
-     * @param {string|number} requestId
-     * @param {[]} args
-     */
-    constructor(socket, method, requestId, args) {
-        this.socket = socket;
-        this.method = method;
-        this.requestId = requestId;
-        this.args = args;
-    }
-
-    /**
-     * Send response
-     * @param {*} data
-     */
-    response(data) {
-        const payload = {
-            id: this.requestId,
-            method: this.method,
-            result: data
-        };
-        this.socket.send(JSON.stringify(payload));
-    }
-}
-/**
  * Telegraph-server
  */
 export class WsTgServer {
@@ -88,13 +58,13 @@ export class WsTgServer {
      */
     onMessage(socket, data) {
         let errorOccurred = false;
-        let messageId, messageMethod, messageArgs;
+        let messageId, messageCall, messageArgs;
         try {
             const parsedData = JSON.parse(data);
             messageId = parsedData.id;
-            messageMethod = parsedData.method;
+            messageCall = parsedData.call;
             messageArgs = parsedData.args || [];
-            if (!messageId || !messageMethod) {
+            if (!messageId || !messageCall) {
                 errorOccurred = true;
             }
         } catch (err) {
@@ -108,11 +78,26 @@ export class WsTgServer {
             return;
         }
 
-        const request = new WsTgServerRequest(socket, messageMethod, messageId, messageArgs);
-        const handlerName = `on${messageMethod.charAt(0).toUpperCase()}${messageMethod.slice(1)}`;
+        const handlerName = `on${messageCall.charAt(0).toUpperCase()}${messageCall.slice(1)}`;
+        /**
+         * Handler for method
+         * @callback WsTgServer~methodHandler
+         * @param {...*} messageArgs
+         * @return {Promise}
+         */
         const handler = this[handlerName];
         if (typeof handler === 'function') {
-            handler(request);
+            handler(...messageArgs)
+                .then((result)=> {
+                    const responsePayload = {
+                        id: messageId,
+                        result: result
+                    };
+                    socket.send(JSON.stringify(responsePayload));
+                })
+                .catch((err)=>{
+                    debug({event: 'Error in the method handler', err: err});
+                });
         }
     }
 

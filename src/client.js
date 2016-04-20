@@ -5,23 +5,7 @@ import Debug from 'debug';
 import EioClient from 'engine.io-client';
 const debug = new Debug('ws-telegraph:client');
 
-/**
- * Represent incoming RPC-response
- */
-class WsTgClientResponse {
-    /**
-     * @param socket - client socket
-     * @param {string} method - rpc-method name
-     * @param {string|number} requestId
-     * @param {*} result
-     */
-    constructor(socket, method, requestId, result) {
-        this.socket = socket;
-        this.method = method;
-        this.requestId = requestId;
-        this.result = result;
-    }
-}
+
 /**
  * WsTgClient for Telegraph-server
  */
@@ -73,7 +57,7 @@ export class WsTgClient {
      * @returns {number}
      */
     generateId() {
-        if (this.callId > 1000000) {
+        if (this.callId === Number.MAX_SAFE_INTEGER) {
             this.callId = 0;
         }
         const newId = ++this.callId;
@@ -87,13 +71,13 @@ export class WsTgClient {
      * @param {...{}} [args]  arguments for remote procedure
      * @return {*}
      */
-    async callWithResult(method, ...args) {
+    async callAndWait(method, ...args) {
         debug({event: 'WsTgClient callWithResult', method: method, args: args});
         const requestId = this.generateId();
 
         const request = JSON.stringify({
             id: requestId,
-            method: method,
+            call: method,
             args: args
         });
         await new Promise((resolve)=> {
@@ -111,14 +95,15 @@ export class WsTgClient {
             }, this.options.timeout);
 
             /**
-             * @param {WsTgClientResponse} response
+             * @param {number} responseId
+             * @param {*} responseResult
              * @returns {*}
              */
-            listener = (response)=> {
-                if (response.requestId === requestId) {
-                    debug('WsTgClientResponse received');
+            listener = (responseId, responseResult)=> {
+                if (responseId === requestId) {
+                    debug('Response received');
                     clearTimeout(timeoutException);
-                    return resolve(response.result);
+                    return resolve(responseResult);
                 }
             };
 
@@ -144,7 +129,7 @@ export class WsTgClient {
 
         const request = JSON.stringify({
             id: requestId,
-            method: method,
+            call: method,
             args: args
         });
         await new Promise((resolve)=> {
@@ -174,11 +159,10 @@ export class WsTgClient {
     onMessage(data) {
         debug({event: 'receive message', data: data});
         let errorOccurred = false;
-        let requestId, requestMethod, responseResult;
+        let requestId, responseResult;
         try {
             const parsedData = JSON.parse(data);
             requestId = parsedData.id;
-            requestMethod = parsedData.method;
             responseResult = parsedData.result;
             if (!requestId || !responseResult) {
                 errorOccurred = true;
@@ -188,21 +172,19 @@ export class WsTgClient {
         }
         if (errorOccurred) {
             debug({
-                event: 'Wrong response received. WsTgClientResponse must be in json format and have id and result fields',
+                event: 'Wrong response received. Response must be in json format and have id and result fields',
                 data: data
             });
             return;
         }
 
-        const response = new WsTgClientResponse(this.eioClient, requestMethod, requestId, responseResult);
         debug('emit rpcResponse event');
         /**
          * RPC response event.
          *
          * @event EioClient#rpcResponse
-         * @type {WsTgClientResponse}
          */
-        this.eioClient.emit('rpcResponse', response);
+        this.eioClient.emit('rpcResponse', requestId, responseResult);
     }
 
     /**
