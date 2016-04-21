@@ -1,4 +1,4 @@
 'use strict';
 
-export {WsTelegraphClient} from './client';
+export {WsTgClient} from './client';
 export {WsTgServer} from './server';

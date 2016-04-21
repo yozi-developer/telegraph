@@ -1,6 +1,5 @@
 'use strict';
 
-import 'source-map-support/register';
 import Debug from 'debug';
 import EioServer from 'engine.io';
 import http from 'http';

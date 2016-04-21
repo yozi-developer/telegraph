@@ -1,6 +1,5 @@
 'use strict';
 
-import 'source-map-support/register';
 import Debug from 'debug';
 import EioClient from 'engine.io-client';
 const debug = new Debug('ws-telegraph:client');
