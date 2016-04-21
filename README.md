@@ -50,7 +50,7 @@ class Client extent WsTgClient {
 
 # TODO
 
-* Error handling
+* https://ru.wikipedia.org/wiki/JSON-RPC (Mainly for error handling)
 
 # Tests
 
