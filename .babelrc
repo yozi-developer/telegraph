@@ -11,8 +11,6 @@
     "transform-function-bind",
     "transform-class-properties",
     "transform-async-to-generator",
-
-
     "syntax-async-functions",
     "transform-es2015-computed-properties",
     "transform-es2015-destructuring",
@@ -22,6 +20,5 @@
     "transform-es2015-sticky-regex"
   ],
   "ignore": [
-  ],
-  "sourceMaps": "inline"
+  ]
 }

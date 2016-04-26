@@ -1,12 +1,11 @@
 {
   "name": "ws-telegraph",
-  "version": "2.0.1",
+  "version": "3.0.0",
   "description": "library for RPC through websockets based on engine.io",
   "main": "lib/index.js",
   "scripts": {
-    "build": "node_modules/.bin/babel ./src --out-dir ./lib",
-    "debug": "DEBUG=* node lib/index.js",
-    "test:build": "node_modules/.bin/babel ./tests/src --out-dir ./tests/lib",
+    "build": "node_modules/.bin/babel ./src --out-dir ./lib --source-maps",
+    "test:build": "node_modules/.bin/babel ./tests/src --out-dir ./tests/lib --source-maps",
     "test": "mocha tests/lib/runner.js --reporter spec"
   },
   "repository": {
@@ -55,7 +54,8 @@
     "babel-runtime": "^6.6.1",
     "debug": "^2.2.0",
     "engine.io": "^1.6.8",
-    "engine.io-client": "^1.6.8"
+    "engine.io-client": "^1.6.8",
+    "json-rpc2": "^1.0.2"
   },
   "optionalDependencies": {
     "memory-cache": "^0.1.5"
