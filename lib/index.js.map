@@ -1,1 +1,1 @@
-{"version":3,"sources":["../src/index.js"],"names":[],"mappings":"AAAA;;;;;;;;;;;mBAEQ;;;;;;;;;mBACA","file":"index.js","sourcesContent":["'use strict';\n\nexport {WsTgClient} from './client';\nexport {WsTgServer} from './server';\n"]}
+{"version":3,"sources":["../src/index.js"],"names":[],"mappings":"AAAA;;;;;;;;;;;mBAEQ,U;;;;;;;;;mBACA,U","file":"index.js","sourcesContent":["'use strict';\n\nexport {WsTgClient} from './client';\nexport {WsTgServer} from './server';\n"]}
