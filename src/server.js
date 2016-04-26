@@ -53,7 +53,7 @@ export class WsTgServer {
      */
     expose(methodName, methodCallback) {
         this.apiServer.expose(methodName, function (args, conn, callback) {
-            methodCallback(args)
+            methodCallback(...args)
                 .then((result)=> {
                     callback(null, result);
                 })

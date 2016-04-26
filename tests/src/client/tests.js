@@ -41,7 +41,7 @@ export function runTests() {
             );
         });
 
-        it('Can call RPC with positional arguments', function () {
+        it('Can call RPC with 1 positional arguments', function () {
             return (
                 (async() => {
                     this.server.expose('hello2', async function onHello2(name) {
@@ -50,6 +50,18 @@ export function runTests() {
                     const result = await this.client.call('hello2', 'Yozi');
 
                     should(result).be.equal('Hello, Yozi');
+                })()
+            );
+        });
+        it('Can call RPC with 2 positional arguments', function () {
+            return (
+                (async() => {
+                    this.server.expose('hello3', async function onHello3(name1, name2) {
+                        return `Hello, ${name1} and ${name2}`;
+                    });
+                    const result = await this.client.call('hello3', 'Yozi', 'Avatar');
+
+                    should(result).be.equal('Hello, Yozi and Avatar');
                 })()
             );
         });

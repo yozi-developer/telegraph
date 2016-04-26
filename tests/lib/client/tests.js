@@ -65,7 +65,7 @@ function runTests() {
             })();
         });
 
-        it('Can call RPC with positional arguments', function () {
+        it('Can call RPC with 1 positional arguments', function () {
             var _this4 = this;
 
             return (0, _asyncToGenerator3.default)(function* () {
@@ -85,13 +85,33 @@ function runTests() {
                 (0, _should2.default)(result).be.equal('Hello, Yozi');
             })();
         });
-
-        it('Throw error for undefined method', function () {
+        it('Can call RPC with 2 positional arguments', function () {
             var _this5 = this;
 
             return (0, _asyncToGenerator3.default)(function* () {
+                _this5.server.expose('hello3', (() => {
+                    var ref = (0, _asyncToGenerator3.default)(function* (name1, name2) {
+                        return `Hello, ${ name1 } and ${ name2 }`;
+                    });
+
+                    function onHello3(_x2, _x3) {
+                        return ref.apply(this, arguments);
+                    }
+
+                    return onHello3;
+                })());
+                const result = yield _this5.client.call('hello3', 'Yozi', 'Avatar');
+
+                (0, _should2.default)(result).be.equal('Hello, Yozi and Avatar');
+            })();
+        });
+
+        it('Throw error for undefined method', function () {
+            var _this6 = this;
+
+            return (0, _asyncToGenerator3.default)(function* () {
                 let errorRaised = false;
-                yield _this5.client.call('undefined').catch(function () {
+                yield _this6.client.call('undefined').catch(function () {
                     errorRaised = true;
                 });
                 (0, _should2.default)(errorRaised).be.true();
@@ -99,11 +119,11 @@ function runTests() {
         });
 
         it('Throw error for broken method', function () {
-            var _this6 = this;
+            var _this7 = this;
 
             return (0, _asyncToGenerator3.default)(function* () {
                 let error = null;
-                _this6.server.expose('broken', (() => {
+                _this7.server.expose('broken', (() => {
                     var ref = (0, _asyncToGenerator3.default)(function* () {
                         throw new Error('I am broken');
                     });
@@ -114,7 +134,7 @@ function runTests() {
 
                     return onBroken;
                 })());
-                yield _this6.client.call('broken').catch(function (err) {
+                yield _this7.client.call('broken').catch(function (err) {
                     error = err;
                 });
                 (0, _should2.default)(error).be.instanceof(Error);
